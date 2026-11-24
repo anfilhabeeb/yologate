@@ -46,7 +46,8 @@ vehicles that stop or jitter on the line aren't counted twice.
 
 1. Click the **Open in GitHub Codespaces** button above. You can also use
    **Code → Codespaces → Create codespace** on GitHub.
-2. Wait for setup to finish. The first time takes about 3–5 minutes while it installs PyTorch, YOLO and the other dependencies.
+2. Wait for setup to finish (about 1 minute). The codespace uses the **lite** install, which runs
+   YOLO from the bundled ONNX model with OpenCV, so the large PyTorch download isn't needed.
 3. The portal opens in a new browser tab (port **8000**). A **Demo camera** with a counting line
    is already added, and its count goes up as the synthetic buses cross the line.
    If the tab doesn't open, go to the **Ports** panel and open port 8000.
@@ -61,6 +62,17 @@ Notes:
 
 ## Quick start (Linux)
 
+**Lite install (recommended to start, no PyTorch, about 300 MB):** YOLO11n runs from
+`models/yolo11n.onnx` through OpenCV DNN.
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements-lite.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+**Full install (Ultralytics + PyTorch, about 6 GB with CUDA; use it for GPUs or other `.pt` models):**
+
 ```bash
 python3 -m venv venv && source venv/bin/activate
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu   # optional: CPU-only torch
@@ -69,15 +81,17 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Open http://localhost:8000, click **+ Add camera**, enter the stream URL, then
-open the camera and click **Draw lines**. The YOLO weights (`yolo11n.pt`) are
-downloaded automatically on first start.
+open the camera and click **Draw lines**. With the full install, the YOLO weights
+(`yolo11n.pt`) are downloaded automatically on first start. If PyTorch isn't
+installed, the portal automatically uses the bundled ONNX model.
 
 ### No camera at hand? Use the synthetic camera
 
 ```bash
-python tools/fake_camera.py --port 8081 \
-  --sprite venv/lib/python3*/site-packages/ultralytics/assets/bus.jpg --crop 3,229,796,728
+python tools/fake_camera.py --port 8081 --sprite tools/assets/bus.jpg
 ```
+
+Or run `bash tools/demo.sh`, which starts the portal and the fake camera and adds the camera with a counting line.
 
 Then add the camera `http://localhost:8081/video` (MJPEG) or
 `http://localhost:8081/snapshot.jpg` (stream type *JPEG snapshot*).
@@ -105,14 +119,15 @@ sudo ./deploy/install.sh     # installs to /opt/vehicle_counter, starts vehicle-
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VC_MODEL` | `yolo11n.pt` | YOLO weights (e.g. `yolo11s.pt` for better accuracy) |
+| `VC_MODEL` | `yolo11n.pt` | YOLO weights for the full install (e.g. `yolo11s.pt`), or a `.onnx` file |
+| `VC_ONNX_MODEL` | `models/yolo11n.onnx` | ONNX model used when PyTorch isn't installed |
 | `VC_DEVICE` | `cpu` | `cpu`, `0` (first CUDA GPU), … |
 | `VC_CONFIDENCE` | `0.35` | Detection confidence threshold |
 | `VC_IMGSZ` | `640` | Inference image size |
 | `VC_MAX_FPS` | `10` | Max processed frames/s per camera |
 | `VC_RECONNECT_DELAY` | `3` | Seconds between reconnect attempts |
 | `VC_DATA_DIR` | `data` | Where the SQLite database is stored |
-| `VC_DETECTOR` | `yolo` | `dummy` = bright-blob detector for tests without a model |
+| `VC_DETECTOR` | `yolo` | `yolo` (PyTorch if installed, else ONNX), `onnx` (force OpenCV DNN), `dummy` (tests) |
 
 ## REST API
 
@@ -144,6 +159,8 @@ image, smoke-tests it and publishes it to GHCR.
 
 ## Notes
 
+- YOLO11 model weights and the sample bus image come from Ultralytics and are licensed under
+  AGPL-3.0. Check Ultralytics' licensing before commercial use.
 - The portal has no authentication. Run it on a trusted network or behind a reverse proxy with auth.
 - Stream URLs with credentials (`http://user:pass@cam/...`) are stored in plain text in the SQLite DB.
 - For many cameras or higher FPS, use a GPU (`VC_DEVICE=0` with CUDA torch).

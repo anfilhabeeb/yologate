@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+DEFAULT_ONNX_MODEL = Path(__file__).resolve().parent.parent / "models" / "yolo11n.onnx"
+
+
 def _env(name: str, default: str) -> str:
     return os.environ.get(name, default)
 
@@ -13,9 +16,12 @@ def _env(name: str, default: str) -> str:
 @dataclass
 class Settings:
     data_dir: Path = field(default_factory=lambda: Path(_env("VC_DATA_DIR", "data")))
-    # "yolo" for real detection, "dummy" for tests / environments without a model.
+    # "yolo": Ultralytics/PyTorch if installed, otherwise falls back to "onnx".
+    # "onnx": YOLO ONNX model run by OpenCV DNN - no PyTorch needed.
+    # "dummy": bright-blob detector for tests without any model.
     detector: str = field(default_factory=lambda: _env("VC_DETECTOR", "yolo"))
     model_path: str = field(default_factory=lambda: _env("VC_MODEL", "yolo11n.pt"))
+    onnx_model_path: str = field(default_factory=lambda: _env("VC_ONNX_MODEL", str(DEFAULT_ONNX_MODEL)))
     device: str = field(default_factory=lambda: _env("VC_DEVICE", "cpu"))
     confidence: float = field(default_factory=lambda: float(_env("VC_CONFIDENCE", "0.35")))
     imgsz: int = field(default_factory=lambda: int(_env("VC_IMGSZ", "640")))

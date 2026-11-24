@@ -8,11 +8,10 @@ PORT="${PORT:-8000}"
 CAM_PORT="${CAM_PORT:-8081}"
 PY="${PYTHON:-python3}"
 
-SPRITE="$($PY -c 'import ultralytics, os; print(os.path.join(os.path.dirname(ultralytics.__file__), "assets", "bus.jpg"))')"
 pkill -f "tools/fake_camera.py" 2>/dev/null || true
 pkill -f "uvicorn app.main:app" 2>/dev/null || true
 
-$PY tools/fake_camera.py --port "$CAM_PORT" --sprite "$SPRITE" --crop 3,229,796,728 --speed 14 --vehicles 2 &
+$PY tools/fake_camera.py --port "$CAM_PORT" --sprite tools/assets/bus.jpg --speed 14 --vehicles 2 &
 $PY -m uvicorn app.main:app --host 0.0.0.0 --port "$PORT" &
 
 for _ in $(seq 1 120); do

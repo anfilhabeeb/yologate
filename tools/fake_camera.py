@@ -6,7 +6,7 @@ vehicles driving left-to-right across a road. With --sprite the vehicles are
 drawn using a real vehicle image (so YOLO can detect them); without it they
 are bright rectangles (enough for VC_DETECTOR=dummy).
 
-    python tools/fake_camera.py --port 8081 --sprite bus.jpg --crop 3,229,796,728
+    python tools/fake_camera.py --port 8081 --sprite tools/assets/bus.jpg
     # then add camera URL http://localhost:8081/video
 """
 from __future__ import annotations

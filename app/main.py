@@ -56,6 +56,7 @@ def create_app(settings: Optional[Settings] = None, detector=None) -> FastAPI:
         agent = CameraAgent(db, det, settings)
         agent.start()
         app.state.db, app.state.agent, app.state.settings = db, agent, settings
+        app.state.detector_name = getattr(det, "name", type(det).__name__)
         try:
             yield
         finally:
@@ -94,8 +95,7 @@ def create_app(settings: Optional[Settings] = None, detector=None) -> FastAPI:
     @app.get("/api/health")
     def health(request: Request):
         agent = agent_(request)
-        return {"status": "ok", "version": __version__, "detector": settings.detector,
-                "model": settings.model_path if settings.detector == "yolo" else None,
+        return {"status": "ok", "version": __version__, "detector": request.app.state.detector_name,
                 "cameras": len(db_(request).list_cameras()), "workers": len(agent.workers)}
 
     @app.get("/api/cameras")

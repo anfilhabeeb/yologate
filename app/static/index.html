@@ -108,7 +108,7 @@ async function refresh() {
   try {
     const [cams, health] = await Promise.all([api("/api/cameras"), api("/api/health")]);
     document.getElementById("meta").textContent =
-      `${health.cameras} camera(s) · detector: ${health.detector}${health.model ? " (" + health.model + ")" : ""}`;
+      `${health.cameras} camera(s) · detector: ${health.detector}`;
     const ids = new Set(cams.map(c => c.id));
     for (const [id, el] of cards) if (!ids.has(id)) { el.remove(); cards.delete(id); }
     cams.forEach(cardFor);
