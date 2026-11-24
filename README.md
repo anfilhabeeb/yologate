@@ -171,7 +171,7 @@ image, smoke-tests it and publishes it to GHCR.
 
 ## Notes
 
-- The Docker image path (`ghcr.io/anfilhabeeb/yologate`) follows the GitHub repository name.
+- CI publishes the Docker image as `ghcr.io/anfilhabeeb/yologate`.
   If you rename the repository to `yologate`, CI publishes to `ghcr.io/anfilhabeeb/yologate`; update
   `docker-compose.yml` to match.
 - Environment variables keep the `VC_` prefix.
