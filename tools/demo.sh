@@ -6,7 +6,21 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 PORT="${PORT:-8000}"
 CAM_PORT="${CAM_PORT:-8081}"
-PY="${PYTHON:-python3}"
+# Use the first Python that has the dependencies (pip installs go to python3,
+# the apt fallback in .devcontainer/setup.sh installs for /usr/bin/python3).
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then
+  for cand in python3 /usr/bin/python3 python; do
+    if command -v "$cand" >/dev/null && "$cand" -c "import cv2, fastapi, uvicorn" 2>/dev/null; then
+      PY="$cand"; break
+    fi
+  done
+fi
+if [ -z "$PY" ]; then
+  echo "ERROR: no Python with the dependencies found - run: bash .devcontainer/setup.sh"
+  exit 1
+fi
+echo "Using $PY"
 
 pkill -f "tools/fake_camera.py" 2>/dev/null || true
 pkill -f "uvicorn app.main:app" 2>/dev/null || true
