@@ -96,12 +96,22 @@ Or run `bash tools/demo.sh`, which starts the portal and the fake camera and add
 Then add the camera `http://localhost:8081/video` (MJPEG) or
 `http://localhost:8081/snapshot.jpg` (stream type *JPEG snapshot*).
 
+### Windows (no Docker)
+
+1. Install Python 3.12 from https://www.python.org/downloads/ and tick **"Add python.exe to PATH"**.
+2. Download this repository (**Code → Download ZIP**) and unzip it.
+3. Double-click **`start_windows.bat`**. The first run installs about 300 MB of dependencies.
+4. Open http://localhost:8000.
+
 ### Docker
 
 ```bash
 docker compose up -d                 # portal on :8000, data in the vc-data volume
 docker compose --profile demo up -d  # also starts a fake camera at http://fake-camera:8081/video
 ```
+
+The image is the **lite** build (ONNX + OpenCV, no PyTorch, about 0.5 GB). For the
+full Ultralytics/PyTorch build, run `docker build --build-arg FULL=1 -t vehicle_counter:full .`.
 
 Or run the image that CI publishes:
 

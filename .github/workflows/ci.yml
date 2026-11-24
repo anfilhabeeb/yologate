@@ -82,6 +82,8 @@ jobs:
           docker run -d --name vc -p 8000:8000 vc-smoke
           for i in $(seq 1 45); do curl -fs localhost:8000/api/health && break; sleep 2; done
           curl -fs localhost:8000/api/health | grep '"status":"ok"'
+          curl -fs localhost:8000/api/health | grep 'yolo-onnx'
+          docker images vc-smoke
           docker logs vc
       - name: Push image to GHCR
         if: github.event_name != 'pull_request'

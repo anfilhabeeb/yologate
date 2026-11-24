@@ -8,3 +8,6 @@ venv
 data
 docs
 *.mp4
+*.pt
+.devcontainer
+tests
