@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vehicle Counter</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>🚗 Vehicle Counter</h1>
+  <span class="meta" id="meta"></span>
+  <button class="primary" id="addBtn">+ Add camera</button>
+</header>
+<main>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" hidden>
+    <p>No cameras yet.</p>
+    <button class="primary" onclick="openAdd()">+ Add your first camera</button>
+  </div>
+</main>
+
+<dialog id="addDlg">
+  <form id="addForm" method="dialog">
+    <h2>Add camera</h2>
+    <label for="f-name">Name</label>
+    <input id="f-name" name="name" required maxlength="100" placeholder="Main gate">
+    <label for="f-url">Stream URL</label>
+    <input id="f-url" name="url" required placeholder="http://192.168.1.20:8080/video">
+    <div class="hint">HTTP MJPEG, RTSP, HLS, a JPEG snapshot URL or a local video file path.</div>
+    <label for="f-type">Stream type</label>
+    <select id="f-type" name="stream_type">
+      <option value="auto">Auto detect</option>
+      <option value="video">Video stream (MJPEG / RTSP / HLS / file)</option>
+      <option value="snapshot">JPEG snapshot (polled)</option>
+    </select>
+    <div class="actions">
+      <button type="button" onclick="addDlg.close()">Cancel</button>
+      <button class="primary" type="submit" value="ok">Add camera</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/common.js"></script>
+<script>
+const grid = document.getElementById("grid");
+const addDlg = document.getElementById("addDlg");
+const cards = new Map();
+
+function openAdd() { document.getElementById("addForm").reset(); addDlg.showModal(); }
+document.getElementById("addBtn").onclick = openAdd;
+
+document.getElementById("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    const cam = await api("/api/cameras", { method: "POST", body: Object.fromEntries(fd) });
+    addDlg.close();
+    toast(`Camera "${cam.name}" added`);
+    location.href = `/camera/${cam.id}`;
+  } catch (err) { toast("Error: " + err.message); }
+});
+
+function cardFor(cam) {
+  let el = cards.get(cam.id);
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
+      <a class="thumb" href="/camera/${cam.id}"><img alt="live view" src="/api/cameras/${cam.id}/stream"></a>
+      <div class="body">
+        <h3><a class="name" href="/camera/${cam.id}"></a><span class="pill"></span></h3>
+        <div class="url"></div>
+        <div class="row"><span class="big total">0</span><span class="hint">vehicles counted</span></div>
+        <div class="row hint info"></div>
+        <div class="row">
+          <a class="btn" href="/camera/${cam.id}">Open &amp; draw lines</a>
+          <button class="toggle"></button>
+          <button class="danger del">Delete</button>
+        </div>
+      </div>`;
+    el.querySelector(".del").onclick = async () => {
+      if (!confirm(`Delete camera "${cam.name}" and all its counts?`)) return;
+      await api(`/api/cameras/${cam.id}`, { method: "DELETE" });
+      el.remove(); cards.delete(cam.id); refresh();
+    };
+    el.querySelector(".toggle").onclick = async () => {
+      await api(`/api/cameras/${cam.id}`, { method: "PATCH", body: { enabled: !el._enabled } });
+      if (!el._enabled) { const img = el.querySelector("img"); img.src = img.src.split("?")[0] + "?t=" + Date.now(); }
+      refresh();
+    };
+    cards.set(cam.id, el);
+    grid.appendChild(el);
+  }
+  const s = cam.status;
+  el._enabled = cam.enabled;
+  el.querySelector(".name").textContent = cam.name;
+  el.querySelector(".url").textContent = cam.url;
+  el.querySelector(".url").title = cam.url;
+  const pill = el.querySelector(".pill");
+  pill.textContent = s.state; pill.className = "pill state-" + s.state;
+  el.querySelector(".total").textContent = s.total;
+  el.querySelector(".info").textContent =
+    `${cam.lines.length} line(s) · ${s.fps} fps · ${s.active_tracks} tracked` + (s.last_error ? ` · ${s.last_error}` : "");
+  el.querySelector(".toggle").textContent = cam.enabled ? "Stop" : "Start";
+}
+
+async function refresh() {
+  try {
+    const [cams, health] = await Promise.all([api("/api/cameras"), api("/api/health")]);
+    document.getElementById("meta").textContent =
+      `${health.cameras} camera(s) · detector: ${health.detector}${health.model ? " (" + health.model + ")" : ""}`;
+    const ids = new Set(cams.map(c => c.id));
+    for (const [id, el] of cards) if (!ids.has(id)) { el.remove(); cards.delete(id); }
+    cams.forEach(cardFor);
+    document.getElementById("empty").hidden = cams.length > 0;
+  } catch (err) { document.getElementById("meta").textContent = "Server unreachable"; }
+}
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

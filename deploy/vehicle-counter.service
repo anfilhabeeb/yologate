@@ -1,0 +1,18 @@
+[Unit]
+Description=Vehicle Counter (YOLO line-crossing counter)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=vc
+WorkingDirectory=/var/lib/vehicle_counter
+Environment=VC_DATA_DIR=/var/lib/vehicle_counter/data
+Environment=VC_MODEL=/var/lib/vehicle_counter/yolo11n.pt
+Environment=YOLO_CONFIG_DIR=/var/lib/vehicle_counter/.ultralytics
+Environment=PYTHONPATH=@DIR@
+ExecStart=@DIR@/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

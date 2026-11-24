@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camera · Vehicle Counter</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <a href="/">← All cameras</a>
+  <h1 id="title">Camera</h1>
+  <span class="pill" id="state"></span>
+  <button id="editCamBtn">Edit camera</button>
+</header>
+<main class="layout">
+  <section>
+    <div class="viewer" id="viewer">
+      <img id="live" alt="live stream" style="min-height:240px">
+      <canvas id="canvas"></canvas>
+      <div class="overlay-msg" id="msg">Connecting…</div>
+    </div>
+    <div class="toolbar">
+      <button id="editBtn" class="primary">✏️ Draw lines</button>
+      <span id="editTools" hidden>
+        <button id="saveBtn" class="primary">Save lines</button>
+        <button id="cancelBtn">Cancel</button>
+        <button id="clearBtn" class="danger">Clear all</button>
+      </span>
+      <span class="hint" id="editHint"></span>
+      <span class="spacer"></span>
+      <span class="hint" id="info"></span>
+    </div>
+    <div class="panel" id="linesPanel">
+      <h2>Counting lines</h2>
+      <div id="lineList"></div>
+      <div class="hint" id="noLines">No lines yet. Click <b>Draw lines</b>, then click-and-drag on the video to draw one.
+        A vehicle is counted when its centre crosses the line. The arrow shows the <b>IN</b> direction.</div>
+    </div>
+  </section>
+  <aside>
+    <div class="panel">
+      <h2>Total vehicles</h2>
+      <div class="big" id="total">0</div>
+      <div class="toolbar"><button id="resetBtn" class="danger">Reset counts</button></div>
+    </div>
+    <div class="panel">
+      <h2>Counts by line</h2>
+      <div id="counts"></div>
+    </div>
+    <div class="panel">
+      <h2>Recent crossings</h2>
+      <div class="events"><table><thead><tr><th>Time</th><th>Line</th><th>Dir</th><th>Type</th></tr></thead>
+        <tbody id="events"></tbody></table></div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="camDlg">
+  <form id="camForm" method="dialog">
+    <h2>Edit camera</h2>
+    <label for="c-name">Name</label><input id="c-name" name="name" required maxlength="100">
+    <label for="c-url">Stream URL</label><input id="c-url" name="url" required>
+    <label for="c-type">Stream type</label>
+    <select id="c-type" name="stream_type">
+      <option value="auto">Auto detect</option>
+      <option value="video">Video stream (MJPEG / RTSP / HLS / file)</option>
+      <option value="snapshot">JPEG snapshot (polled)</option>
+    </select>
+    <div class="actions">
+      <button type="button" onclick="camDlg.close()">Cancel</button>
+      <button class="primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/common.js"></script>
+<script>
+const camId = Number(location.pathname.split("/").pop());
+const live = document.getElementById("live");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const camDlg = document.getElementById("camDlg");
+let cam = null, editing = false, draft = [], drag = null;
+
+function streamUrl(raw) { return `/api/cameras/${camId}/stream?${raw ? "raw=1&" : ""}t=${Date.now()}`; }
+live.onload = () => { document.getElementById("msg").hidden = true; resizeCanvas(); };
+live.onerror = () => { document.getElementById("msg").hidden = false; setTimeout(() => live.src = streamUrl(editing), 3000); };
+
+function resizeCanvas() {
+  const r = live.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(r.width * devicePixelRatio));
+  canvas.height = Math.max(1, Math.round(r.height * devicePixelRatio));
+  draw();
+}
+new ResizeObserver(resizeCanvas).observe(live);
+
+function linesToShow() { return editing ? draft : []; } // saved lines are drawn by the server on the stream
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const W = canvas.width, H = canvas.height, s = devicePixelRatio;
+  const all = [...linesToShow()];
+  if (drag) all.push({ ...drag, name: "new" });
+  all.forEach((l, i) => {
+    const color = LINE_COLORS[i % LINE_COLORS.length];
+    const ax = l.x1 * W, ay = l.y1 * H, bx = l.x2 * W, by = l.y2 * H;
+    ctx.lineWidth = 3 * s; ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    [[ax, ay], [bx, by]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 5 * s, 0, 7); ctx.fill(); });
+    // IN direction arrow: towards the positive side of a->b
+    const mx = (ax + bx) / 2, my = (ay + by) / 2, dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len, L = 30 * s;
+    const tx = mx + nx * L, ty = my + ny * L;
+    ctx.beginPath(); ctx.moveTo(mx - nx * L, my - ny * L); ctx.lineTo(tx, ty); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - nx * 10 * s + ny * 7 * s, ty - ny * 10 * s - nx * 7 * s);
+    ctx.lineTo(tx - nx * 10 * s - ny * 7 * s, ty - ny * 10 * s + nx * 7 * s); ctx.fill();
+    ctx.font = `bold ${13 * s}px system-ui`; ctx.fillText("IN", tx + nx * 6 * s - 8 * s, ty + ny * 6 * s + 5 * s);
+    ctx.fillText(l.name || `Line ${i + 1}`, ax + 6 * s, ay - 8 * s);
+  });
+}
+
+function normPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  return { x: Math.min(1, Math.max(0, (p.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (p.clientY - r.top) / r.height)) };
+}
+function down(e) { if (!editing) return; e.preventDefault(); const p = normPos(e); drag = { x1: p.x, y1: p.y, x2: p.x, y2: p.y }; }
+function move(e) { if (!drag) return; e.preventDefault(); const p = normPos(e); drag.x2 = p.x; drag.y2 = p.y; draw(); }
+function up() {
+  if (!drag) return;
+  const r = canvas.getBoundingClientRect();
+  if (Math.hypot((drag.x2 - drag.x1) * r.width, (drag.y2 - drag.y1) * r.height) > 15) {
+    draft.push({ ...drag, name: `Line ${draft.length + 1}` });
+  }
+  drag = null; renderLineList(); draw();
+}
+canvas.addEventListener("mousedown", down); window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+canvas.addEventListener("touchstart", down, { passive: false }); canvas.addEventListener("touchmove", move, { passive: false });
+canvas.addEventListener("touchend", up);
+
+function setEditing(on) {
+  editing = on;
+  draft = on ? cam.lines.map(l => ({ ...l })) : [];
+  document.getElementById("editBtn").hidden = on;
+  document.getElementById("editTools").hidden = !on;
+  document.getElementById("editHint").textContent = on ? "Click and drag on the video to draw a line." : "";
+  canvas.style.pointerEvents = on ? "auto" : "none";
+  live.src = streamUrl(on); // raw stream while editing so lines are not drawn twice
+  renderLineList(); draw();
+}
+document.getElementById("editBtn").onclick = () => setEditing(true);
+document.getElementById("cancelBtn").onclick = () => setEditing(false);
+document.getElementById("clearBtn").onclick = () => { draft = []; renderLineList(); draw(); };
+document.getElementById("saveBtn").onclick = async () => {
+  try {
+    cam = await api(`/api/cameras/${camId}/lines`, { method: "PUT", body: draft });
+    toast("Lines saved"); setEditing(false); update();
+  } catch (err) { toast("Error: " + err.message); }
+};
+
+function renderLineList() {
+  const list = document.getElementById("lineList");
+  const lines = editing ? draft : (cam?.lines || []);
+  document.getElementById("noLines").hidden = lines.length > 0;
+  list.innerHTML = "";
+  lines.forEach((l, i) => {
+    const row = document.createElement("div");
+    row.className = "line-item";
+    row.innerHTML = `<span class="swatch" style="background:${LINE_COLORS[i % LINE_COLORS.length]}"></span>`;
+    if (editing) {
+      const inp = document.createElement("input"); inp.value = l.name || ""; inp.maxLength = 50;
+      inp.oninput = () => { l.name = inp.value; draw(); };
+      const flip = document.createElement("button"); flip.textContent = "⇅ Flip IN"; flip.title = "Swap IN/OUT direction";
+      flip.onclick = () => { [l.x1, l.y1, l.x2, l.y2] = [l.x2, l.y2, l.x1, l.y1]; draw(); };
+      const del = document.createElement("button"); del.className = "danger"; del.textContent = "✕";
+      del.onclick = () => { draft.splice(i, 1); renderLineList(); draw(); };
+      row.append(inp, flip, del);
+    } else {
+      const span = document.createElement("span"); span.textContent = l.name; row.append(span);
+    }
+    list.appendChild(row);
+  });
+}
+
+function renderCounts(status) {
+  const box = document.getElementById("counts");
+  if (!cam.lines.length) { box.innerHTML = `<div class="hint">Draw a line to start counting.</div>`; return; }
+  let html = "";
+  cam.lines.forEach((l, i) => {
+    const c = status.counts[l.id] || { in: {}, out: {} };
+    const labels = [...new Set([...Object.keys(c.in), ...Object.keys(c.out)])].sort();
+    html += `<h3 style="font-size:14px;margin:10px 0 4px"><span class="swatch" style="display:inline-block;background:${LINE_COLORS[i % LINE_COLORS.length]}"></span> ${esc(l.name)}</h3>
+      <table><thead><tr><th>Type</th><th class="num">In</th><th class="num">Out</th><th class="num">Total</th></tr></thead><tbody>`;
+    labels.forEach(lb => { const a = c.in[lb] || 0, b = c.out[lb] || 0; html += `<tr><td>${esc(lb)}</td><td class="num">${a}</td><td class="num">${b}</td><td class="num">${a + b}</td></tr>`; });
+    const ti = sumCounts(c.in), to = sumCounts(c.out);
+    html += `<tr><th>All</th><th class="num">${ti}</th><th class="num">${to}</th><th class="num">${ti + to}</th></tr></tbody></table>`;
+  });
+  box.innerHTML = html;
+}
+
+async function update() {
+  try {
+    const [c, events] = await Promise.all([api(`/api/cameras/${camId}`), api(`/api/cameras/${camId}/events?limit=30`)]);
+    cam = c;
+    const s = c.status;
+    document.title = `${c.name} · Vehicle Counter`;
+    document.getElementById("title").textContent = c.name;
+    const st = document.getElementById("state"); st.textContent = s.state; st.className = "pill state-" + s.state;
+    document.getElementById("total").textContent = s.total;
+    document.getElementById("info").textContent =
+      `${s.fps} fps · ${s.active_tracks} tracked` + (s.frame_size ? ` · ${s.frame_size[0]}×${s.frame_size[1]}` : "") + (s.last_error ? ` · ${s.last_error}` : "");
+    document.getElementById("msg").hidden = s.state === "running" && s.frames_processed > 0;
+    document.getElementById("msg").textContent = s.state === "error" ? `Stream error: ${s.last_error}` : (c.enabled ? "Connecting…" : "Camera stopped");
+    renderCounts(s);
+    if (!editing) renderLineList();
+    const names = Object.fromEntries(c.lines.map(l => [l.id, l.name]));
+    document.getElementById("events").innerHTML = events.map(e =>
+      `<tr><td>${new Date(e.ts * 1000).toLocaleTimeString()}</td><td>${esc(names[e.line_id] || e.line_id)}</td><td>${e.direction}</td><td>${esc(e.label)}</td></tr>`).join("");
+  } catch (err) {
+    if (String(err.message).includes("not found")) { document.getElementById("title").textContent = "Camera not found"; }
+  }
+}
+
+document.getElementById("resetBtn").onclick = async () => {
+  if (!confirm("Reset all counts for this camera?")) return;
+  await api(`/api/cameras/${camId}/reset`, { method: "POST" }); toast("Counts reset"); update();
+};
+document.getElementById("editCamBtn").onclick = () => {
+  document.getElementById("c-name").value = cam.name;
+  document.getElementById("c-url").value = cam.url;
+  document.getElementById("c-type").value = cam.stream_type;
+  camDlg.showModal();
+};
+document.getElementById("camForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api(`/api/cameras/${camId}`, { method: "PATCH", body: Object.fromEntries(new FormData(e.target)) });
+    camDlg.close(); toast("Camera updated"); live.src = streamUrl(editing); update();
+  } catch (err) { toast("Error: " + err.message); }
+});
+
+canvas.style.pointerEvents = "none";
+live.src = streamUrl(false);
+update().then(renderLineList);
+setInterval(update, 1000);
+</script>
+</body>
+</html>
