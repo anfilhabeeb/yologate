@@ -18,7 +18,7 @@ if [ "${FULL:-0}" = "1" ]; then
   PIP="python3 -m pip install --timeout 120 --retries 10"
   $PIP torch torchvision --index-url https://download.pytorch.org/whl/cpu
   $PIP -r requirements-dev.txt
-  python3 -c "$CHECK" && echo "Vehicle Counter dependencies OK (python3, full)"
+  python3 -c "$CHECK" && echo "YOLOgate dependencies OK (python3, full)"
   exit 0
 fi
 
@@ -26,7 +26,7 @@ if [ "${USE_APT:-0}" != "1" ]; then
   echo ">>> Installing with pip (pypi.org)..."
   if python3 -m pip install --timeout 30 --retries 2 -r requirements-lite.txt \
      && python3 -c "$CHECK"; then
-    echo "Vehicle Counter dependencies OK (python3, pip)"
+    echo "YOLOgate dependencies OK (python3, pip)"
     exit 0
   fi
   echo ">>> pip could not install from pypi.org - falling back to Debian packages (apt)"
@@ -37,7 +37,7 @@ sudo apt-get install -y --no-install-recommends \
   python3-opencv python3-numpy python3-fastapi python3-uvicorn python3-pydantic \
   python3-pytest python3-httpx
 if /usr/bin/python3 -c "$CHECK"; then
-  echo "Vehicle Counter dependencies OK (/usr/bin/python3, apt)"
+  echo "YOLOgate dependencies OK (/usr/bin/python3, apt)"
 else
   echo "ERROR: dependencies could not be installed with pip or apt"
   exit 1

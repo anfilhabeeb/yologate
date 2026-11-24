@@ -33,7 +33,9 @@ class Settings:
 
     @property
     def db_path(self) -> Path:
-        return self.data_dir / "vehicle_counter.db"
+        legacy = self.data_dir / "vehicle_counter.db"  # name used before the YOLOgate rename
+        new = self.data_dir / "yologate.db"
+        return legacy if legacy.exists() and not new.exists() else new
 
 
 # COCO class ids considered "vehicles".

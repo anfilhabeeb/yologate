@@ -57,7 +57,8 @@ def wait_for(pred, timeout=20.0, interval=0.2):
 
 def test_health_and_pages(client):
     assert client.get("/api/health").json()["status"] == "ok"
-    assert "Vehicle Counter" in client.get("/").text
+    assert "YOLOgate" in client.get("/").text
+    assert client.get("/api/health").json()["app"] == "YOLOgate"
     assert client.get("/camera/1").status_code == 200
     assert client.get("/static/common.js").status_code == 200
 

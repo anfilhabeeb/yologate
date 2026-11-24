@@ -1,6 +1,6 @@
 # Lite image (default): YOLO11n runs from models/yolo11n.onnx with OpenCV DNN,
 # no PyTorch, ~0.5 GB.  Full Ultralytics/PyTorch image (~several GB):
-#   docker build --build-arg FULL=1 -t vehicle_counter:full .
+#   docker build --build-arg FULL=1 -t yologate:full .
 FROM python:3.12-slim
 
 ARG FULL=0
@@ -24,8 +24,8 @@ COPY app ./app
 COPY models ./models
 COPY tools ./tools
 
-RUN useradd -r -u 10001 vc && mkdir -p /data && chown vc /data
-USER vc
+RUN useradd -r -u 10001 yologate && mkdir -p /data && chown yologate /data
+USER yologate
 VOLUME /data
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s \

@@ -1,5 +1,5 @@
 @echo off
-REM Vehicle Counter - run on Windows without Docker (lite: YOLO via ONNX + OpenCV).
+REM YOLOgate - run on Windows without Docker (lite: YOLO via ONNX + OpenCV).
 REM Requires Python 3.10+ from https://www.python.org/downloads/ ("Add python.exe to PATH" ticked).
 cd /d "%~dp0"
 if not exist venv\Scripts\python.exe (
@@ -10,7 +10,7 @@ if not exist venv\Scripts\python.exe (
 venv\Scripts\python.exe -m pip install --disable-pip-version-check --timeout 120 --retries 10 -q -r requirements-lite.txt
 if errorlevel 1 ( echo Installing dependencies failed - check your internet connection and run again. & pause & exit /b 1 )
 echo.
-echo  Vehicle Counter is starting: open http://localhost:8000 in your browser
+echo  YOLOgate is starting: open http://localhost:8000 in your browser
 echo  Press Ctrl+C in this window to stop.
 echo.
 venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000

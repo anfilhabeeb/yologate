@@ -1,4 +1,6 @@
-# Vehicle Counter
+# 🚦 YOLOgate
+
+**AI vehicle counting for any camera.**
 
 A web portal that connects to live camera streams, detects vehicles with **YOLO**
 (Ultralytics YOLO11) and counts every vehicle whose path crosses a line you draw
@@ -56,7 +58,7 @@ vehicles that stop or jitter on the line aren't counted twice.
 Notes:
 - A codespace runs in GitHub's cloud, so it can only reach cameras with a **public** URL.
   Cameras on your local network (e.g. `http://192.168.x.x/...`) aren't reachable from it.
-- To restart the app, run `bash tools/demo.sh`. Logs are in `/tmp/vehicle-counter.log`.
+- To restart the app, run `bash tools/demo.sh`. Logs are in `/tmp/yologate.log`.
 - Codespaces stop after about 30 minutes of inactivity. Stop or delete yours at
   https://github.com/codespaces to save your free hours.
 
@@ -106,23 +108,23 @@ Then add the camera `http://localhost:8081/video` (MJPEG) or
 ### Docker
 
 ```bash
-docker compose up -d                 # portal on :8000, data in the vc-data volume
+docker compose up -d                 # portal on :8000, data in the yologate-data volume
 docker compose --profile demo up -d  # also starts a fake camera at http://fake-camera:8081/video
 ```
 
 The image is the **lite** build (ONNX + OpenCV, no PyTorch, about 0.5 GB). For the
-full Ultralytics/PyTorch build, run `docker build --build-arg FULL=1 -t vehicle_counter:full .`.
+full Ultralytics/PyTorch build, run `docker build --build-arg FULL=1 -t yologate:full .`.
 
 Or run the image that CI publishes:
 
 ```bash
-docker run -d -p 8000:8000 -v vc-data:/data ghcr.io/anfilhabeeb/vehicle_counter:latest
+docker run -d --name yologate -p 8000:8000 -v yologate-data:/data ghcr.io/anfilhabeeb/vehicle_counter:latest
 ```
 
 ### systemd service
 
 ```bash
-sudo ./deploy/install.sh     # installs to /opt/vehicle_counter, starts vehicle-counter.service
+sudo ./deploy/install.sh     # installs to /opt/yologate, starts yologate.service
 ```
 
 ## Configuration (environment variables)
@@ -168,6 +170,11 @@ on a generated traffic video. GitHub Actions runs all tests on every push, build
 image, smoke-tests it and publishes it to GHCR.
 
 ## Notes
+
+- The Docker image path (`ghcr.io/anfilhabeeb/vehicle_counter`) follows the GitHub repository name.
+  If you rename the repository to `yologate`, CI publishes to `ghcr.io/anfilhabeeb/yologate`; update
+  `docker-compose.yml` to match.
+- Environment variables keep the `VC_` prefix.
 
 - YOLO11 model weights and the sample bus image come from Ultralytics and are licensed under
   AGPL-3.0. Check Ultralytics' licensing before commercial use.

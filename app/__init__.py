@@ -1,2 +1,3 @@
-"""Vehicle counter: live camera streams + YOLO + line-crossing counting."""
+"""YOLOgate: AI vehicle counting for any camera (live streams + YOLO + line crossing)."""
+APP_NAME = "YOLOgate"
 __version__ = "1.0.0"

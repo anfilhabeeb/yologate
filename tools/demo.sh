@@ -40,5 +40,5 @@ if [ "$(curl -fs "http://localhost:$PORT/api/cameras")" = "[]" ]; then
     -d '[{"name":"Center line","x1":0.5,"y1":0.25,"x2":0.5,"y2":0.95}]' >/dev/null
   echo "Added demo camera #$id with a counting line"
 fi
-echo "Vehicle Counter is running on port $PORT"
+echo "YOLOgate is running on port $PORT"
 wait

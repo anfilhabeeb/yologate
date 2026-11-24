@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Camera · Vehicle Counter</title>
+<title>Camera · YOLOgate</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -204,7 +204,7 @@ async function update() {
     const [c, events] = await Promise.all([api(`/api/cameras/${camId}`), api(`/api/cameras/${camId}/events?limit=30`)]);
     cam = c;
     const s = c.status;
-    document.title = `${c.name} · Vehicle Counter`;
+    document.title = `${c.name} · YOLOgate`;
     document.getElementById("title").textContent = c.name;
     const st = document.getElementById("state"); st.textContent = s.state; st.className = "pill state-" + s.state;
     document.getElementById("total").textContent = s.total;

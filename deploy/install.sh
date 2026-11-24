@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Install Vehicle Counter as a systemd service on a Linux host (Debian/Ubuntu/RHEL).
-# Usage: sudo ./deploy/install.sh [install_dir]   (default /opt/vehicle_counter)
+# Install YOLOgate as a systemd service on a Linux host (Debian/Ubuntu/RHEL).
+# Usage: sudo ./deploy/install.sh [install_dir]   (default /opt/yologate)
 set -euo pipefail
-DIR="${1:-/opt/vehicle_counter}"
+DIR="${1:-/opt/yologate}"
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 
-if ! id vc >/dev/null 2>&1; then useradd -r -m -d /var/lib/vehicle_counter -s /usr/sbin/nologin vc; fi
-mkdir -p "$DIR" /var/lib/vehicle_counter
+if ! id yologate >/dev/null 2>&1; then useradd -r -m -d /var/lib/yologate -s /usr/sbin/nologin yologate; fi
+mkdir -p "$DIR" /var/lib/yologate
 cp -r "$SRC/app" "$SRC/tools" "$SRC/requirements.txt" "$DIR/"
 python3 -m venv "$DIR/venv"
 "$DIR/venv/bin/pip" install --upgrade pip
 "$DIR/venv/bin/pip" install torch torchvision --index-url https://download.pytorch.org/whl/cpu || true
 "$DIR/venv/bin/pip" install -r "$DIR/requirements.txt"
-(cd /var/lib/vehicle_counter && "$DIR/venv/bin/python" -c "from ultralytics import YOLO; YOLO('yolo11n.pt')")
-chown -R vc:vc /var/lib/vehicle_counter
+(cd /var/lib/yologate && "$DIR/venv/bin/python" -c "from ultralytics import YOLO; YOLO('yolo11n.pt')")
+chown -R yologate:yologate /var/lib/yologate
 
-sed "s#@DIR@#$DIR#g" "$SRC/deploy/vehicle-counter.service" > /etc/systemd/system/vehicle-counter.service
+sed "s#@DIR@#$DIR#g" "$SRC/deploy/yologate.service" > /etc/systemd/system/yologate.service
 systemctl daemon-reload
-systemctl enable --now vehicle-counter
-echo "Vehicle Counter running on http://$(hostname -I | awk '{print $1}'):8000"
+systemctl enable --now yologate
+echo "YOLOgate running on http://$(hostname -I | awk '{print $1}'):8000"

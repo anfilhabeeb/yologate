@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import __version__
+from . import APP_NAME, __version__
 from .agent import CameraAgent
 from .config import Settings
 from .db import Database
@@ -63,7 +63,7 @@ def create_app(settings: Optional[Settings] = None, detector=None) -> FastAPI:
             agent.stop()
             db.close()
 
-    app = FastAPI(title="Vehicle Counter", version=__version__, lifespan=lifespan)
+    app = FastAPI(title=APP_NAME, description="AI vehicle counting for any camera", version=__version__, lifespan=lifespan)
 
     def db_(request: Request) -> Database:
         return request.app.state.db
@@ -95,7 +95,7 @@ def create_app(settings: Optional[Settings] = None, detector=None) -> FastAPI:
     @app.get("/api/health")
     def health(request: Request):
         agent = agent_(request)
-        return {"status": "ok", "version": __version__, "detector": request.app.state.detector_name,
+        return {"status": "ok", "app": APP_NAME, "version": __version__, "detector": request.app.state.detector_name,
                 "cameras": len(db_(request).list_cameras()), "workers": len(agent.workers)}
 
     @app.get("/api/cameras")
