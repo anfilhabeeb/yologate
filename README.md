@@ -6,7 +6,7 @@ A web portal that connects to live camera streams, detects vehicles with **YOLO*
 (Ultralytics YOLO11) and counts every vehicle whose path crosses a line you draw
 on the camera view. Runs on Linux, CPU-only by default.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anfilhabeeb/yologate?ref=claude/loving-gates-aghs13)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anfilhabeeb/yologate?ref=main)
 
 ![Camera view](docs/camera.png)
 
