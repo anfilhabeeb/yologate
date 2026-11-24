@@ -4,6 +4,8 @@ A web portal that connects to live camera streams, detects vehicles with **YOLO*
 (Ultralytics YOLO11) and counts every vehicle whose path crosses a line you draw
 on the camera view. Runs on Linux, CPU-only by default.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anfilhabeeb/vehicle_counter?ref=claude/loving-gates-aghs13)
+
 ![Camera view](docs/camera.png)
 
 ## Features
@@ -39,6 +41,23 @@ camera ──► reader thread (keeps latest frame only)
 A vehicle is counted when its tracked **centre point** moves from one side of the
 line segment to the other. Each track is counted at most once per line, so
 vehicles that stop or jitter on the line aren't counted twice.
+
+## Try it in GitHub Codespaces (no install)
+
+1. Click the **Open in GitHub Codespaces** button above. You can also use
+   **Code → Codespaces → Create codespace** on GitHub.
+2. Wait for setup to finish. The first time takes about 3–5 minutes while it installs PyTorch, YOLO and the other dependencies.
+3. The portal opens in a new browser tab (port **8000**). A **Demo camera** with a counting line
+   is already added, and its count goes up as the synthetic buses cross the line.
+   If the tab doesn't open, go to the **Ports** panel and open port 8000.
+4. Add your own cameras with **+ Add camera**.
+
+Notes:
+- A codespace runs in GitHub's cloud, so it can only reach cameras with a **public** URL.
+  Cameras on your local network (e.g. `http://192.168.x.x/...`) aren't reachable from it.
+- To restart the app, run `bash tools/demo.sh`. Logs are in `/tmp/vehicle-counter.log`.
+- Codespaces stop after about 30 minutes of inactivity. Stop or delete yours at
+  https://github.com/codespaces to save your free hours.
 
 ## Quick start (Linux)
 

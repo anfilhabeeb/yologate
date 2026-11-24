@@ -1,0 +1,16 @@
+{
+  "name": "Vehicle Counter",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "nohup bash tools/demo.sh > /tmp/vehicle-counter.log 2>&1 &",
+  "forwardPorts": [8000, 8081],
+  "portsAttributes": {
+    "8000": { "label": "Vehicle Counter portal", "onAutoForward": "openBrowser" },
+    "8081": { "label": "Demo camera", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": ["README.md"] },
+    "vscode": { "extensions": ["ms-python.python"] }
+  }
+}
