@@ -6,7 +6,7 @@ A web portal that connects to live camera streams, detects vehicles with **YOLO*
 (Ultralytics YOLO11) and counts every vehicle whose path crosses a line you draw
 on the camera view. Runs on Linux, CPU-only by default.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anfilhabeeb/vehicle_counter?ref=claude/loving-gates-aghs13)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anfilhabeeb/yologate?ref=claude/loving-gates-aghs13)
 
 ![Camera view](docs/camera.png)
 
@@ -118,7 +118,7 @@ full Ultralytics/PyTorch build, run `docker build --build-arg FULL=1 -t yologate
 Or run the image that CI publishes:
 
 ```bash
-docker run -d --name yologate -p 8000:8000 -v yologate-data:/data ghcr.io/anfilhabeeb/vehicle_counter:latest
+docker run -d --name yologate -p 8000:8000 -v yologate-data:/data ghcr.io/anfilhabeeb/yologate:latest
 ```
 
 ### systemd service
@@ -171,7 +171,7 @@ image, smoke-tests it and publishes it to GHCR.
 
 ## Notes
 
-- The Docker image path (`ghcr.io/anfilhabeeb/vehicle_counter`) follows the GitHub repository name.
+- The Docker image path (`ghcr.io/anfilhabeeb/yologate`) follows the GitHub repository name.
   If you rename the repository to `yologate`, CI publishes to `ghcr.io/anfilhabeeb/yologate`; update
   `docker-compose.yml` to match.
 - Environment variables keep the `VC_` prefix.

@@ -1,6 +1,6 @@
 services:
   yologate:
-    image: ghcr.io/anfilhabeeb/vehicle_counter:latest
+    image: ghcr.io/anfilhabeeb/yologate:latest
     build: .
     container_name: yologate
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
   #   then add camera URL http://fake-camera:8081/video
   fake-camera:
     profiles: ["demo"]
-    image: ghcr.io/anfilhabeeb/vehicle_counter:latest
+    image: ghcr.io/anfilhabeeb/yologate:latest
     build: .
     command: ["python", "tools/fake_camera.py", "--port", "8081"]
     ports:
